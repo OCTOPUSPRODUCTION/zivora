@@ -1,0 +1,781 @@
+let recording = false;
+let steps = [];
+let recordingTitle = "Captured workflow";
+let startedAt = null;
+
+async function loadState() {
+  const state = await chrome.storage.local.get([
+    "recording",
+    "steps",
+    "recordingTitle",
+    "startedAt"
+  ]);
+
+  recording = Boolean(state.recording);
+  steps = Array.isArray(state.steps) ? state.steps : [];
+  recordingTitle =
+    state.recordingTitle || "Captured workflow";
+  startedAt = state.startedAt || null;
+}
+
+async function saveState() {
+  await chrome.storage.local.set({
+    recording,
+    steps,
+    recordingTitle,
+    startedAt
+  });
+}
+
+function normaliseLabel(value) {
+  let text = String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/[|•·]+/g, " ")
+    .trim();
+
+  if (!text) {
+    return "";
+  }
+
+  text = text
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/\bwww\.\S+/gi, " ")
+    .replace(
+      /\b[a-z0-9-]+\.(?:com|co\.uk|org|net|io|dev|ai)(?:\s*[›>\/]\s*\S*)?/gi,
+      " "
+    )
+    .replace(
+      /\s*[›>]\s*[a-z0-9/_?=&.-]+/gi,
+      " "
+    );
+
+  text = text
+    .replace(/\bCached\b/gi, " ")
+    .replace(/\bTranslate this result\b/gi, " ")
+    .replace(/\bMore results from\b.*$/gi, " ");
+
+  const words = text
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ");
+
+  const cleanedWords = [];
+
+  for (const word of words) {
+    const previous =
+      cleanedWords[cleanedWords.length - 1];
+
+    if (
+      !previous ||
+      previous.toLowerCase() !==
+        word.toLowerCase()
+    ) {
+      cleanedWords.push(word);
+    }
+  }
+
+  text = cleanedWords.join(" ").trim();
+
+  const sentenceParts = text
+    .split(/\s{2,}| - | — | \| /)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (sentenceParts.length > 0) {
+    text = sentenceParts[0];
+  }
+
+  return text
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+function titleCase(value) {
+  return value.replace(/\b\w/g, (letter) =>
+    letter.toUpperCase()
+  );
+}
+
+function cleanSiteName(hostname) {
+  return String(hostname || "")
+    .replace(/^www\./, "")
+    .split(".")[0]
+    .replace(/[-_]/g, " ");
+}
+
+function classifyElement(payload, label) {
+  const role = String(
+    payload.elementRole || ""
+  ).toLowerCase();
+
+  const hostname = String(
+    payload.hostname || ""
+  ).toLowerCase();
+
+  if (
+    hostname.includes("google.") &&
+    role === "link"
+  ) {
+    return "search result";
+  }
+
+  if (
+    role.includes("search") ||
+    /search/i.test(label)
+  ) {
+    return "search box";
+  }
+
+  if (/sign in|log in/i.test(label)) {
+    return "sign-in link";
+  }
+
+  if (
+    /sign up|register|create account/i.test(label)
+  ) {
+    return "sign-up link";
+  }
+
+  if (role === "button") {
+    return "button";
+  }
+
+  if (role === "link") {
+    return "link";
+  }
+
+  if (role === "input") {
+    return "input field";
+  }
+
+  if (role === "dropdown") {
+    return "dropdown";
+  }
+
+  return role || "element";
+}
+
+function removeRepeatedSiteWords(value) {
+  const words = normaliseLabel(value)
+    .split(" ")
+    .filter(Boolean);
+
+  const result = [];
+
+  for (const word of words) {
+    const previous = result[result.length - 1];
+
+    if (
+      !previous ||
+      previous.toLowerCase() !==
+        word.toLowerCase()
+    ) {
+      result.push(word);
+    }
+  }
+
+  return result.join(" ").trim();
+}
+
+function cleanCapturedLabel(payload) {
+  let label = removeRepeatedSiteWords(
+    payload.elementText ||
+      payload.ariaLabel ||
+      payload.placeholder ||
+      ""
+  );
+
+  label = label
+    .replace(
+      /\bhttps?\b.*$/i,
+      ""
+    )
+    .replace(
+      /\bwww\b.*$/i,
+      ""
+    )
+    .replace(
+      /\s+(?:Google|GitHub|YouTube)\s*$/i,
+      ""
+    )
+    .trim();
+
+  return label.slice(0, 70);
+}
+
+function createSmartTitle(payload) {
+  const label = cleanCapturedLabel(payload);
+
+  const type = classifyElement(
+    payload,
+    label
+  );
+
+  const site = titleCase(
+    cleanSiteName(payload.hostname)
+  );
+
+  if (type === "sign-in link") {
+    return "Open Sign In";
+  }
+
+  if (type === "sign-up link") {
+    return "Open Sign Up";
+  }
+
+  if (
+    /create issue|new issue/i.test(label)
+  ) {
+    return "Create Issue";
+  }
+
+  if (
+    /create repository|new repository/i.test(
+      label
+    )
+  ) {
+    return "Create Repository";
+  }
+
+  if (type === "search box") {
+    return "Use Search";
+  }
+
+  if (type === "search result") {
+    return label
+      ? `Open ${label.slice(0, 52)}`
+      : "Open Search Result";
+  }
+
+  if (type === "button") {
+    return label
+      ? `Click ${label.slice(0, 52)}`
+      : "Click Button";
+  }
+
+  if (type === "link") {
+    return label
+      ? `Open ${label.slice(0, 52)}`
+      : "Open Link";
+  }
+
+  if (label) {
+    return `Select ${label.slice(0, 52)}`;
+  }
+
+  if (site) {
+    return `Continue on ${site}`;
+  }
+
+  return "Continue to Next Step";
+}
+
+function createLocalAction(payload) {
+  const label = cleanCapturedLabel(payload);
+
+  const type = classifyElement(
+    payload,
+    label
+  );
+
+  const site = titleCase(
+    cleanSiteName(payload.hostname)
+  );
+
+  if (type === "search result") {
+    return label
+      ? `Click the ${label} search result.`
+      : "Click the highlighted search result.";
+  }
+
+  if (type === "search box") {
+    return "Click the search box and enter your search.";
+  }
+
+  if (type === "sign-in link") {
+    return "Click the Sign In link.";
+  }
+
+  if (type === "sign-up link") {
+    return "Click the Sign Up link.";
+  }
+
+  if (type === "button") {
+    return label
+      ? `Click the ${label} button.`
+      : "Click the highlighted button.";
+  }
+
+  if (type === "link") {
+    return label
+      ? `Click the ${label} link.`
+      : "Click the highlighted link.";
+  }
+
+  if (label) {
+    return `Select ${label}${
+      site ? ` on ${site}` : ""
+    }.`;
+  }
+
+  return `Select the highlighted ${type}${
+    site ? ` on ${site}` : ""
+  }.`;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function dataUrlToBlob(dataUrl) {
+  const [header, encoded] = dataUrl.split(",");
+  const mime =
+    header.match(/data:(.*?);base64/)?.[1] ||
+    "image/jpeg";
+
+  const binary = atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return new Blob([bytes], { type: mime });
+}
+
+async function canvasToDataUrl(canvas, quality = 0.84) {
+  const blob = await canvas.convertToBlob({
+    type: "image/jpeg",
+    quality
+  });
+
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (
+    let index = 0;
+    index < bytes.length;
+    index += chunkSize
+  ) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(index, index + chunkSize)
+    );
+  }
+
+  return `data:image/jpeg;base64,${btoa(binary)}`;
+}
+
+async function processScreenshot(
+  screenshotDataUrl,
+  payload
+) {
+  const screenshotBlob = dataUrlToBlob(screenshotDataUrl);
+  const bitmap = await createImageBitmap(screenshotBlob);
+
+  const viewportWidth =
+    payload.viewport?.width || bitmap.width;
+  const viewportHeight =
+    payload.viewport?.height || bitmap.height;
+
+  const scaleX = bitmap.width / viewportWidth;
+  const scaleY = bitmap.height / viewportHeight;
+
+  const target = payload.rect || {
+    x: 0,
+    y: 0,
+    width: viewportWidth,
+    height: viewportHeight
+  };
+
+  const paddingX = Math.max(target.width * 1.8, 260);
+  const paddingY = Math.max(target.height * 2.2, 180);
+
+  const cropXCss = clamp(
+    target.x - paddingX,
+    0,
+    viewportWidth
+  );
+
+  const cropYCss = clamp(
+    target.y - paddingY,
+    0,
+    viewportHeight
+  );
+
+  const cropRightCss = clamp(
+    target.x + target.width + paddingX,
+    0,
+    viewportWidth
+  );
+
+  const cropBottomCss = clamp(
+    target.y + target.height + paddingY,
+    0,
+    viewportHeight
+  );
+
+  const cropX = Math.round(cropXCss * scaleX);
+  const cropY = Math.round(cropYCss * scaleY);
+  const cropWidth = Math.max(
+    1,
+    Math.round((cropRightCss - cropXCss) * scaleX)
+  );
+  const cropHeight = Math.max(
+    1,
+    Math.round((cropBottomCss - cropYCss) * scaleY)
+  );
+
+  const canvas = new OffscreenCanvas(
+    cropWidth,
+    cropHeight
+  );
+
+  const context = canvas.getContext("2d");
+
+  context.drawImage(
+    bitmap,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    cropWidth,
+    cropHeight
+  );
+
+  const sensitiveRects = Array.isArray(
+    payload.sensitiveRects
+  )
+    ? payload.sensitiveRects
+    : [];
+
+  for (const sensitive of sensitiveRects) {
+    const x =
+      (sensitive.x - cropXCss) * scaleX;
+    const y =
+      (sensitive.y - cropYCss) * scaleY;
+    const width = sensitive.width * scaleX;
+    const height = sensitive.height * scaleY;
+
+    if (
+      x + width < 0 ||
+      y + height < 0 ||
+      x > cropWidth ||
+      y > cropHeight
+    ) {
+      continue;
+    }
+
+    const safeX = clamp(x, 0, cropWidth);
+    const safeY = clamp(y, 0, cropHeight);
+    const safeWidth = clamp(
+      width,
+      1,
+      cropWidth - safeX
+    );
+    const safeHeight = clamp(
+      height,
+      1,
+      cropHeight - safeY
+    );
+
+    context.save();
+    context.filter = "blur(14px)";
+
+    context.drawImage(
+      canvas,
+      safeX,
+      safeY,
+      safeWidth,
+      safeHeight,
+      safeX,
+      safeY,
+      safeWidth,
+      safeHeight
+    );
+
+    context.restore();
+
+    context.fillStyle = "rgba(25, 25, 30, 0.28)";
+    context.fillRect(
+      safeX,
+      safeY,
+      safeWidth,
+      safeHeight
+    );
+  }
+
+  const highlightX =
+    (target.x - cropXCss) * scaleX;
+  const highlightY =
+    (target.y - cropYCss) * scaleY;
+  const highlightWidth = target.width * scaleX;
+  const highlightHeight = target.height * scaleY;
+
+  const centerX =
+    highlightX + highlightWidth / 2;
+  const centerY =
+    highlightY + highlightHeight / 2;
+
+  const radius = Math.max(
+    24,
+    Math.min(
+      58,
+      Math.max(highlightWidth, highlightHeight) * 0.65
+    )
+  );
+
+  context.save();
+
+  context.beginPath();
+  context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  context.fillStyle = "rgba(239, 68, 68, 0.16)";
+  context.fill();
+
+  context.lineWidth = Math.max(4, radius * 0.11);
+  context.strokeStyle = "rgba(239, 68, 68, 0.95)";
+  context.stroke();
+
+  context.beginPath();
+  context.arc(
+    centerX,
+    centerY,
+    Math.max(5, radius * 0.16),
+    0,
+    Math.PI * 2
+  );
+  context.fillStyle = "rgba(239, 68, 68, 0.98)";
+  context.fill();
+
+  context.restore();
+
+  bitmap.close();
+
+  return {
+    screenshot: await canvasToDataUrl(canvas),
+    crop: {
+      x: cropXCss,
+      y: cropYCss,
+      width: cropRightCss - cropXCss,
+      height: cropBottomCss - cropYCss
+    },
+    highlight: {
+      x: centerX / cropWidth,
+      y: centerY / cropHeight
+    }
+  };
+}
+
+async function captureVisible(sender, payload) {
+  if (!sender.tab || sender.tab.windowId === undefined) {
+    return {
+      screenshot: null,
+      crop: null,
+      highlight: null
+    };
+  }
+
+  const screenshotDataUrl =
+    await chrome.tabs.captureVisibleTab(
+      sender.tab.windowId,
+      {
+        format: "jpeg",
+        quality: 88
+      }
+    );
+
+  return processScreenshot(
+    screenshotDataUrl,
+    payload
+  );
+}
+
+chrome.runtime.onInstalled.addListener(async () => {
+  await loadState();
+  await saveState();
+});
+
+chrome.runtime.onStartup.addListener(loadState);
+
+chrome.runtime.onMessage.addListener(
+  (message, sender, sendResponse) => {
+    (async () => {
+      await loadState();
+
+      if (message.type === "GET_STATE") {
+        sendResponse({
+          success: true,
+          recording,
+          steps,
+          recordingTitle,
+          startedAt
+        });
+        return;
+      }
+
+      if (message.type === "START_RECORDING") {
+        recording = true;
+        steps = [];
+        recordingTitle =
+          String(message.title || "").trim() ||
+          "Captured workflow";
+        startedAt = new Date().toISOString();
+
+        await saveState();
+
+        sendResponse({
+          success: true,
+          recording,
+          steps,
+          recordingTitle,
+          startedAt
+        });
+        return;
+      }
+
+      if (message.type === "STOP_RECORDING") {
+        recording = false;
+        await saveState();
+
+        sendResponse({
+          success: true,
+          recording,
+          steps,
+          recordingTitle,
+          startedAt
+        });
+        return;
+      }
+
+      if (message.type === "CLEAR_RECORDING") {
+        recording = false;
+        steps = [];
+        recordingTitle = "Captured workflow";
+        startedAt = null;
+
+        await saveState();
+
+        sendResponse({
+          success: true,
+          recording,
+          steps,
+          recordingTitle,
+          startedAt
+        });
+        return;
+      }
+
+      if (
+        message.type === "CAPTURE_CLICK" &&
+        recording
+      ) {
+        const payload = message.payload || {};
+
+        let processed = {
+          screenshot: null,
+          crop: null,
+          highlight: null
+        };
+
+        try {
+          processed = await captureVisible(
+            sender,
+            payload
+          );
+        } catch (error) {
+          console.warn(
+            "Screenshot processing failed:",
+            error
+          );
+        }
+
+        const step = {
+          id: crypto.randomUUID(),
+          position: steps.length,
+          title: createSmartTitle(payload),
+          action: createLocalAction(payload),
+          website:
+            payload.hostname || "Unknown website",
+          element:
+            normaliseLabel(payload.elementText) ||
+            payload.elementRole ||
+            payload.tagName ||
+            "Highlighted element",
+          pageUrl: payload.pageUrl || "",
+          pageTitle: payload.pageTitle || "",
+          selector: payload.selector || "",
+          elementRole: payload.elementRole || "",
+          screenshot: processed.screenshot,
+          crop: processed.crop,
+          highlight: processed.highlight,
+          createdAt: new Date().toISOString()
+        };
+
+        steps.push(step);
+        await saveState();
+
+        sendResponse({
+          success: true,
+          stepCount: steps.length
+        });
+        return;
+      }
+
+      if (message.type === "EXPORT_RECORDING") {
+        const exportData = {
+          version: 2,
+          source: "zivora-chrome-extension",
+          title: recordingTitle,
+          description: `Workflow captured with Zivora on ${
+            startedAt
+              ? new Date(startedAt).toLocaleString()
+              : "an unknown date"
+          }.`,
+          startedAt,
+          exportedAt: new Date().toISOString(),
+          steps
+        };
+
+        const dataUrl =
+          "data:application/json;charset=utf-8," +
+          encodeURIComponent(
+            JSON.stringify(exportData, null, 2)
+          );
+
+        await chrome.downloads.download({
+          url: dataUrl,
+          filename: `zivora-${Date.now()}.json`,
+          saveAs: true
+        });
+
+        sendResponse({
+          success: true,
+          stepCount: steps.length
+        });
+        return;
+      }
+
+      sendResponse({
+        success: false,
+        error: "Unknown message type"
+      });
+    })().catch((error) => {
+      console.error(error);
+
+      sendResponse({
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unexpected extension error"
+      });
+    });
+
+    return true;
+  }
+);

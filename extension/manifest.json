@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Zivora Workflow Capture",
+  "version": "2.0.0",
+  "description": "Record polished browser workflows with focused screenshots and privacy protection.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "downloads"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Zivora Capture"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

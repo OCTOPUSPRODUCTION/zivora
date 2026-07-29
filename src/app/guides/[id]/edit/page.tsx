@@ -49,7 +49,7 @@ export default function GuideEditorPage() {
     useState<SaveStatus>("saved");
 
   const [previewMode, setPreviewMode] =
-    useState(false);
+    useState(true);
 
   const [publishing, setPublishing] =
     useState(false);
@@ -756,8 +756,8 @@ export default function GuideEditorPage() {
           >
             <Eye size={17} />
             {previewMode
-              ? "Edit"
-              : "Preview"}
+              ? "Edit guide"
+              : "Finish editing"}
           </button>
 
           <button
