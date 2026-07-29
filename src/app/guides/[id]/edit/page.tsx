@@ -2,36 +2,38 @@
 
 import {
   ArrowDown,
+  ArrowLeft,
   ArrowUp,
   Check,
   Copy,
+  Eye,
   ImagePlus,
+  Loader2,
   Plus,
+  Save,
   Share2,
   Trash2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  useParams,
-  useRouter,
-} from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ChangeEvent,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type {
-  Guide,
-  Step,
-} from "@/lib/types";
+import type { Guide, Step } from "@/lib/types";
+
+type SaveStatus =
+  | "saved"
+  | "saving"
+  | "error";
 
 export default function GuideEditorPage() {
-  const params =
-    useParams<{ id: string }>();
-
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-
   const guideId = params.id;
 
   const [guide, setGuide] =
@@ -40,29 +42,53 @@ export default function GuideEditorPage() {
   const [steps, setSteps] =
     useState<Step[]>([]);
 
-  const [saveStatus, setSaveStatus] =
-    useState<
-      "saved" |
-      "saving" |
-      "error"
-    >("saved");
-
   const [loading, setLoading] =
     useState(true);
 
+  const [saveStatus, setSaveStatus] =
+    useState<SaveStatus>("saved");
+
+  const [previewMode, setPreviewMode] =
+    useState(false);
+
+  const [publishing, setPublishing] =
+    useState(false);
+
+  const [copied, setCopied] =
+    useState(false);
+
+  const [uploadingStepId, setUploadingStepId] =
+    useState<string | null>(null);
+
+  const guideSaveTimer =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stepSaveTimers =
+    useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
   useEffect(() => {
     void loadGuide();
+
+    return () => {
+      if (guideSaveTimer.current) {
+        clearTimeout(guideSaveTimer.current);
+      }
+
+      Object.values(stepSaveTimers.current).forEach(
+        clearTimeout,
+      );
+    };
   }, [guideId]);
 
   async function loadGuide() {
+    setLoading(true);
+
     try {
-      const supabase =
-        createClient();
+      const supabase = createClient();
 
       const {
         data: authData,
-      } =
-        await supabase.auth.getUser();
+      } = await supabase.auth.getUser();
 
       if (!authData.user) {
         router.replace("/login");
@@ -97,48 +123,55 @@ export default function GuideEditorPage() {
         throw stepError;
       }
 
-      setGuide(
-        guideData as Guide,
-      );
-
-      setSteps(
-        (stepData ?? []) as Step[],
-      );
+      setGuide(guideData as Guide);
+      setSteps((stepData ?? []) as Step[]);
     } catch (error) {
       alert(
         error instanceof Error
           ? error.message
-          : "Could not load guide.",
+          : "Could not load this guide.",
       );
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateGuide(
+  function updateGuideLocally(
     changes: Partial<Guide>,
   ) {
     if (!guide) {
       return;
     }
 
-    setSaveStatus("saving");
-
-    setGuide({
+    const updatedGuide = {
       ...guide,
       ...changes,
-    });
+    };
 
+    setGuide(updatedGuide);
+    setSaveStatus("saving");
+
+    if (guideSaveTimer.current) {
+      clearTimeout(guideSaveTimer.current);
+    }
+
+    guideSaveTimer.current = setTimeout(() => {
+      void saveGuide(changes);
+    }, 650);
+  }
+
+  async function saveGuide(
+    changes: Partial<Guide>,
+  ) {
     try {
-      const supabase =
-        createClient();
+      const supabase = createClient();
 
       const {
         error,
       } = await supabase
         .from("guides")
         .update(changes)
-        .eq("id", guide.id);
+        .eq("id", guideId);
 
       if (error) {
         throw error;
@@ -150,27 +183,41 @@ export default function GuideEditorPage() {
     }
   }
 
-  async function updateStep(
+  function updateStepLocally(
     stepId: string,
     changes: Partial<Step>,
   ) {
-    setSaveStatus("saving");
-
-    setSteps(
-      (current) =>
-        current.map((step) =>
-          step.id === stepId
-            ? {
-                ...step,
-                ...changes,
-              }
-            : step,
-        ),
+    setSteps((current) =>
+      current.map((step) =>
+        step.id === stepId
+          ? {
+              ...step,
+              ...changes,
+            }
+          : step,
+      ),
     );
 
+    setSaveStatus("saving");
+
+    if (stepSaveTimers.current[stepId]) {
+      clearTimeout(
+        stepSaveTimers.current[stepId],
+      );
+    }
+
+    stepSaveTimers.current[stepId] =
+      setTimeout(() => {
+        void saveStep(stepId, changes);
+      }, 650);
+  }
+
+  async function saveStep(
+    stepId: string,
+    changes: Partial<Step>,
+  ) {
     try {
-      const supabase =
-        createClient();
+      const supabase = createClient();
 
       const {
         error,
@@ -191,8 +238,7 @@ export default function GuideEditorPage() {
 
   async function addStep() {
     try {
-      const supabase =
-        createClient();
+      const supabase = createClient();
 
       const {
         data,
@@ -202,10 +248,10 @@ export default function GuideEditorPage() {
         .insert({
           guide_id: guideId,
           position: steps.length,
-          title:
-            `Step ${steps.length + 1}`,
+          title: `Step ${steps.length + 1}`,
           description:
-            "Explain what the reader should do.",
+            "Explain what the reader should do in this step.",
+          image_url: null,
         })
         .select()
         .single();
@@ -213,23 +259,21 @@ export default function GuideEditorPage() {
       if (error || !data) {
         throw (
           error ??
-          new Error(
-            "Could not add step.",
-          )
+          new Error("Could not add the step.")
         );
       }
 
-      setSteps(
-        (current) => [
-          ...current,
-          data as Step,
-        ],
-      );
+      setSteps((current) => [
+        ...current,
+        data as Step,
+      ]);
+
+      setSaveStatus("saved");
     } catch (error) {
       alert(
         error instanceof Error
           ? error.message
-          : "Could not add step.",
+          : "Could not add the step.",
       );
     }
   }
@@ -238,8 +282,42 @@ export default function GuideEditorPage() {
     step: Step,
   ) {
     try {
-      const supabase =
-        createClient();
+      const supabase = createClient();
+
+      const insertPosition =
+        steps.findIndex(
+          (item) => item.id === step.id,
+        ) + 1;
+
+      const reordered = steps.map(
+        (item, index) => ({
+          ...item,
+          position:
+            index >= insertPosition
+              ? index + 1
+              : index,
+        }),
+      );
+
+      await Promise.all(
+        reordered
+          .filter(
+            (item) =>
+              item.position !==
+              steps.find(
+                (existing) =>
+                  existing.id === item.id,
+              )?.position,
+          )
+          .map((item) =>
+            supabase
+              .from("steps")
+              .update({
+                position: item.position,
+              })
+              .eq("id", item.id),
+          ),
+      );
 
       const {
         data,
@@ -248,13 +326,10 @@ export default function GuideEditorPage() {
         .from("steps")
         .insert({
           guide_id: guideId,
-          position: steps.length,
-          title:
-            `${step.title} copy`,
-          description:
-            step.description,
-          image_url:
-            step.image_url,
+          position: insertPosition,
+          title: `${step.title} copy`,
+          description: step.description,
+          image_url: step.image_url,
         })
         .select()
         .single();
@@ -263,32 +338,37 @@ export default function GuideEditorPage() {
         throw (
           error ??
           new Error(
-            "Could not duplicate step.",
+            "Could not duplicate the step.",
           )
         );
       }
 
-      setSteps(
-        (current) => [
-          ...current,
-          data as Step,
-        ],
-      );
+      const result = [
+        ...reordered.slice(0, insertPosition),
+        data as Step,
+        ...reordered.slice(insertPosition),
+      ].map((item, index) => ({
+        ...item,
+        position: index,
+      }));
+
+      setSteps(result);
+      setSaveStatus("saved");
     } catch (error) {
       alert(
         error instanceof Error
           ? error.message
-          : "Could not duplicate step.",
+          : "Could not duplicate the step.",
       );
     }
   }
 
-  async function removeStep(
+  async function deleteStep(
     stepId: string,
   ) {
     const confirmed =
       window.confirm(
-        "Delete this step?",
+        "Delete this step permanently?",
       );
 
     if (!confirmed) {
@@ -296,8 +376,7 @@ export default function GuideEditorPage() {
     }
 
     try {
-      const supabase =
-        createClient();
+      const supabase = createClient();
 
       const {
         error,
@@ -310,43 +389,34 @@ export default function GuideEditorPage() {
         throw error;
       }
 
-      const remaining =
-        steps.filter(
-          (step) =>
-            step.id !== stepId,
-        );
+      const remaining = steps
+        .filter((step) => step.id !== stepId)
+        .map((step, position) => ({
+          ...step,
+          position,
+        }));
 
       setSteps(remaining);
 
-      await savePositions(
-        remaining,
+      await Promise.all(
+        remaining.map((step) =>
+          supabase
+            .from("steps")
+            .update({
+              position: step.position,
+            })
+            .eq("id", step.id),
+        ),
       );
+
+      setSaveStatus("saved");
     } catch (error) {
       alert(
         error instanceof Error
           ? error.message
-          : "Could not delete step.",
+          : "Could not delete the step.",
       );
     }
-  }
-
-  async function savePositions(
-    reorderedSteps: Step[],
-  ) {
-    const supabase =
-      createClient();
-
-    await Promise.all(
-      reorderedSteps.map(
-        (step, index) =>
-          supabase
-            .from("steps")
-            .update({
-              position: index,
-            })
-            .eq("id", step.id),
-      ),
-    );
   }
 
   async function moveStep(
@@ -363,9 +433,7 @@ export default function GuideEditorPage() {
       return;
     }
 
-    const reordered = [
-      ...steps,
-    ];
+    const reordered = [...steps];
 
     [
       reordered[index],
@@ -375,20 +443,28 @@ export default function GuideEditorPage() {
       reordered[index],
     ];
 
-    const normalized =
-      reordered.map(
-        (step, position) => ({
-          ...step,
-          position,
-        }),
-      );
+    const normalized = reordered.map(
+      (step, position) => ({
+        ...step,
+        position,
+      }),
+    );
 
     setSteps(normalized);
     setSaveStatus("saving");
 
     try {
-      await savePositions(
-        normalized,
+      const supabase = createClient();
+
+      await Promise.all(
+        normalized.map((step) =>
+          supabase
+            .from("steps")
+            .update({
+              position: step.position,
+            })
+            .eq("id", step.id),
+        ),
       );
 
       setSaveStatus("saved");
@@ -408,68 +484,159 @@ export default function GuideEditorPage() {
       return;
     }
 
-    try {
-      const supabase =
-        createClient();
+    if (
+      ![
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+      ].includes(file.type)
+    ) {
+      alert(
+        "Please upload a PNG, JPG or WEBP image.",
+      );
+      return;
+    }
 
-      const safeFileName =
-        file.name.replace(
-          /[^a-zA-Z0-9._-]/g,
-          "-",
-        );
+    if (file.size > 8 * 1024 * 1024) {
+      alert(
+        "The image must be smaller than 8 MB.",
+      );
+      return;
+    }
+
+    setUploadingStepId(stepId);
+
+    try {
+      const supabase = createClient();
+
+      const extension =
+        file.name.split(".").pop() ?? "png";
 
       const storagePath =
-        `${guideId}/${stepId}-${Date.now()}-${safeFileName}`;
+        `${guideId}/${stepId}-${Date.now()}.${extension}`;
 
       const {
-        error,
+        error: uploadError,
       } = await supabase.storage
         .from("guide-images")
-        .upload(
-          storagePath,
-          file,
-          {
-            upsert: false,
-          },
-        );
+        .upload(storagePath, file, {
+          upsert: false,
+        });
 
-      if (error) {
-        throw error;
+      if (uploadError) {
+        throw uploadError;
       }
 
       const {
-        data,
+        data: publicData,
       } = supabase.storage
         .from("guide-images")
-        .getPublicUrl(
-          storagePath,
-        );
+        .getPublicUrl(storagePath);
 
-      await updateStep(
-        stepId,
-        {
-          image_url:
-            data.publicUrl,
-        },
+      await saveStep(stepId, {
+        image_url: publicData.publicUrl,
+      });
+
+      setSteps((current) =>
+        current.map((step) =>
+          step.id === stepId
+            ? {
+                ...step,
+                image_url:
+                  publicData.publicUrl,
+              }
+            : step,
+        ),
       );
+
+      setSaveStatus("saved");
     } catch (error) {
       alert(
         error instanceof Error
           ? error.message
-          : "Could not upload image.",
+          : "Could not upload the screenshot.",
       );
+    } finally {
+      setUploadingStepId(null);
+      event.target.value = "";
     }
   }
 
   async function removeImage(
     stepId: string,
   ) {
-    await updateStep(
-      stepId,
-      {
-        image_url: null,
-      },
+    const confirmed =
+      window.confirm(
+        "Remove this screenshot?",
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await saveStep(stepId, {
+      image_url: null,
+    });
+
+    setSteps((current) =>
+      current.map((step) =>
+        step.id === stepId
+          ? {
+              ...step,
+              image_url: null,
+            }
+          : step,
+      ),
     );
+  }
+
+  async function togglePublish() {
+    if (!guide) {
+      return;
+    }
+
+    setPublishing(true);
+
+    const publishing =
+      guide.status === "draft";
+
+    try {
+      const changes: Partial<Guide> = {
+        status:
+          publishing
+            ? "published"
+            : "draft",
+        is_public: publishing,
+      };
+
+      const supabase = createClient();
+
+      const {
+        error,
+      } = await supabase
+        .from("guides")
+        .update(changes)
+        .eq("id", guide.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setGuide({
+        ...guide,
+        ...changes,
+      });
+
+      setSaveStatus("saved");
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Could not update publishing.",
+      );
+    } finally {
+      setPublishing(false);
+    }
   }
 
   async function publishAndCopyLink() {
@@ -477,8 +644,27 @@ export default function GuideEditorPage() {
       return;
     }
 
+    setPublishing(true);
+
     try {
-      await updateGuide({
+      const supabase = createClient();
+
+      const {
+        error,
+      } = await supabase
+        .from("guides")
+        .update({
+          status: "published",
+          is_public: true,
+        })
+        .eq("id", guide.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setGuide({
+        ...guide,
         status: "published",
         is_public: true,
       });
@@ -490,37 +676,30 @@ export default function GuideEditorPage() {
         publicUrl,
       );
 
-      alert(
-        "Guide published and public link copied.",
+      setCopied(true);
+
+      window.setTimeout(
+        () => setCopied(false),
+        2000,
       );
-    } catch {
+    } catch (error) {
       alert(
-        "Could not publish guide.",
+        error instanceof Error
+          ? error.message
+          : "Could not publish the guide.",
       );
+    } finally {
+      setPublishing(false);
     }
-  }
-
-  async function togglePublish() {
-    if (!guide) {
-      return;
-    }
-
-    const publishing =
-      guide.status === "draft";
-
-    await updateGuide({
-      status:
-        publishing
-          ? "published"
-          : "draft",
-      is_public:
-        publishing,
-    });
   }
 
   if (loading) {
     return (
-      <main className="phaseLoading">
+      <main className="phaseEditorLoading">
+        <Loader2
+          className="phaseSpin"
+          size={28}
+        />
         Loading guide...
       </main>
     );
@@ -528,255 +707,376 @@ export default function GuideEditorPage() {
 
   if (!guide) {
     return (
-      <main className="phaseLoading">
+      <main className="phaseEditorLoading">
         Guide not found.
       </main>
     );
   }
 
   return (
-    <main className="phaseEditor">
-      <header>
-        <Link href="/dashboard">
-          ← Dashboard
+    <main className="phaseEditorPro">
+      <header className="phaseEditorTopbar">
+        <Link
+          href="/dashboard"
+          className="phaseBackButton"
+        >
+          <ArrowLeft size={17} />
+          Dashboard
         </Link>
 
-        <span
-          className={`saveState ${saveStatus}`}
+        <div
+          className={`phaseSaveStatus ${saveStatus}`}
         >
-          <Check size={15} />
+          {saveStatus === "saving" ? (
+            <Loader2
+              className="phaseSpin"
+              size={15}
+            />
+          ) : saveStatus === "saved" ? (
+            <Check size={15} />
+          ) : (
+            <Save size={15} />
+          )}
 
-          {saveStatus === "saved"
-            ? "Saved"
-            : saveStatus === "saving"
-              ? "Saving..."
+          {saveStatus === "saving"
+            ? "Saving..."
+            : saveStatus === "saved"
+              ? "Saved"
               : "Save failed"}
-        </span>
+        </div>
 
-        <button
-          className="phaseSecondary"
-          onClick={togglePublish}
-        >
-          {guide.status === "draft"
-            ? "Publish"
-            : "Unpublish"}
-        </button>
+        <div className="phaseEditorTopActions">
+          <button
+            className="phaseEditorSecondary"
+            onClick={() =>
+              setPreviewMode(
+                (current) => !current,
+              )
+            }
+          >
+            <Eye size={17} />
+            {previewMode
+              ? "Edit"
+              : "Preview"}
+          </button>
 
-        <button
-          className="phasePrimary"
-          onClick={
-            publishAndCopyLink
-          }
-        >
-          <Share2 size={17} />
-          Publish and copy link
-        </button>
+          <button
+            className="phaseEditorSecondary"
+            disabled={publishing}
+            onClick={togglePublish}
+          >
+            {guide.status === "draft"
+              ? "Publish"
+              : "Unpublish"}
+          </button>
+
+          <button
+            className="phaseEditorPrimary"
+            disabled={publishing}
+            onClick={publishAndCopyLink}
+          >
+            {publishing ? (
+              <Loader2
+                className="phaseSpin"
+                size={17}
+              />
+            ) : copied ? (
+              <Check size={17} />
+            ) : (
+              <Share2 size={17} />
+            )}
+
+            {copied
+              ? "Link copied"
+              : "Publish and copy link"}
+          </button>
+        </div>
       </header>
 
-      <section className="phaseEditorContent">
-        <section className="phaseGuideHeader">
-          <span
-            className={`phaseStatus ${guide.status}`}
-          >
-            {guide.status}
-          </span>
-
-          <input
-            aria-label="Guide title"
-            value={guide.title}
-            onChange={(event) =>
-              updateGuide({
-                title:
-                  event.target.value,
-              })
-            }
-          />
-
-          <textarea
-            aria-label="Guide description"
-            value={
-              guide.description
-            }
-            onChange={(event) =>
-              updateGuide({
-                description:
-                  event.target.value,
-              })
-            }
-          />
-        </section>
-
-        <section className="phaseSteps">
-          {steps.map(
-            (step, index) => (
-              <article
-                className="phaseStep"
-                key={step.id}
+      <section className="phaseEditorContainer">
+        {previewMode ? (
+          <article className="phasePreviewDocument">
+            <div className="phasePreviewHeader">
+              <span
+                className={`phaseEditorBadge ${guide.status}`}
               >
-                <span className="phaseStepNumber">
-                  {index + 1}
+                {guide.status}
+              </span>
+
+              <h1>{guide.title}</h1>
+              <p>{guide.description}</p>
+            </div>
+
+            <div className="phasePreviewSteps">
+              {steps.map(
+                (step, index) => (
+                  <section
+                    className="phasePreviewStep"
+                    key={step.id}
+                  >
+                    <span>
+                      {index + 1}
+                    </span>
+
+                    <div>
+                      <h2>
+                        {step.title}
+                      </h2>
+
+                      <p>
+                        {
+                          step.description
+                        }
+                      </p>
+
+                      {step.image_url && (
+                        <img
+                          src={
+                            step.image_url
+                          }
+                          alt={step.title}
+                        />
+                      )}
+                    </div>
+                  </section>
+                ),
+              )}
+            </div>
+          </article>
+        ) : (
+          <>
+            <section className="phaseEditorGuideHeader">
+              <div className="phaseEditorGuideStatusRow">
+                <span
+                  className={`phaseEditorBadge ${guide.status}`}
+                >
+                  {guide.status}
                 </span>
 
-                <div className="phaseStepBody">
-                  <input
-                    aria-label={`Step ${index + 1} title`}
-                    value={step.title}
-                    onChange={(
-                      event,
-                    ) =>
-                      updateStep(
-                        step.id,
-                        {
-                          title:
-                            event
-                              .target
-                              .value,
-                        },
-                      )
-                    }
-                  />
+                <small>
+                  Click the title or description
+                  to edit
+                </small>
+              </div>
 
-                  <textarea
-                    aria-label={`Step ${index + 1} description`}
-                    value={
-                      step.description
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      updateStep(
-                        step.id,
-                        {
-                          description:
-                            event
-                              .target
-                              .value,
-                        },
-                      )
-                    }
-                  />
+              <input
+                className="phaseEditorTitleInput"
+                aria-label="Guide title"
+                value={guide.title}
+                onChange={(event) =>
+                  updateGuideLocally({
+                    title:
+                      event.target.value,
+                  })
+                }
+                placeholder="Guide title"
+              />
 
-                  {step.image_url ? (
-                    <div className="phaseImage">
-                      <img
-                        src={
-                          step.image_url
+              <textarea
+                className="phaseEditorDescriptionInput"
+                aria-label="Guide description"
+                value={guide.description}
+                onChange={(event) =>
+                  updateGuideLocally({
+                    description:
+                      event.target.value,
+                  })
+                }
+                placeholder="Describe what this guide helps someone complete."
+              />
+            </section>
+
+            <section className="phaseEditorSteps">
+              {steps.map(
+                (step, index) => (
+                  <article
+                    className="phaseEditorStepCard"
+                    key={step.id}
+                  >
+                    <span className="phaseEditorStepNumber">
+                      {index + 1}
+                    </span>
+
+                    <div className="phaseEditorStepContent">
+                      <input
+                        className="phaseEditorStepTitle"
+                        value={step.title}
+                        aria-label={`Step ${index + 1} title`}
+                        onChange={(event) =>
+                          updateStepLocally(
+                            step.id,
+                            {
+                              title:
+                                event.target
+                                  .value,
+                            },
+                          )
                         }
-                        alt={step.title}
+                        placeholder="Step title"
                       />
 
+                      <textarea
+                        className="phaseEditorStepDescription"
+                        value={
+                          step.description
+                        }
+                        aria-label={`Step ${index + 1} description`}
+                        onChange={(event) =>
+                          updateStepLocally(
+                            step.id,
+                            {
+                              description:
+                                event.target
+                                  .value,
+                            },
+                          )
+                        }
+                        placeholder="Explain what the reader should do."
+                      />
+
+                      {step.image_url ? (
+                        <div className="phaseEditorImageBox">
+                          <img
+                            src={
+                              step.image_url
+                            }
+                            alt={step.title}
+                          />
+
+                          <button
+                            onClick={() =>
+                              removeImage(
+                                step.id,
+                              )
+                            }
+                          >
+                            <X size={15} />
+                            Remove screenshot
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="phaseEditorUploadBox">
+                          {uploadingStepId ===
+                          step.id ? (
+                            <>
+                              <Loader2
+                                className="phaseSpin"
+                                size={25}
+                              />
+                              <strong>
+                                Uploading...
+                              </strong>
+                            </>
+                          ) : (
+                            <>
+                              <ImagePlus
+                                size={25}
+                              />
+
+                              <strong>
+                                Upload screenshot
+                              </strong>
+
+                              <small>
+                                PNG, JPG or WEBP,
+                                maximum 8 MB
+                              </small>
+                            </>
+                          )}
+
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            disabled={
+                              uploadingStepId ===
+                              step.id
+                            }
+                            onChange={(
+                              event,
+                            ) =>
+                              uploadImage(
+                                step.id,
+                                event,
+                              )
+                            }
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    <div className="phaseEditorStepActions">
                       <button
+                        title="Move step up"
+                        disabled={index === 0}
                         onClick={() =>
-                          removeImage(
+                          moveStep(
+                            index,
+                            -1,
+                          )
+                        }
+                      >
+                        <ArrowUp
+                          size={16}
+                        />
+                      </button>
+
+                      <button
+                        title="Move step down"
+                        disabled={
+                          index ===
+                          steps.length - 1
+                        }
+                        onClick={() =>
+                          moveStep(
+                            index,
+                            1,
+                          )
+                        }
+                      >
+                        <ArrowDown
+                          size={16}
+                        />
+                      </button>
+
+                      <button
+                        title="Duplicate step"
+                        onClick={() =>
+                          duplicateStep(
+                            step,
+                          )
+                        }
+                      >
+                        <Copy size={16} />
+                      </button>
+
+                      <button
+                        className="phaseEditorDeleteButton"
+                        title="Delete step"
+                        onClick={() =>
+                          deleteStep(
                             step.id,
                           )
                         }
                       >
-                        Remove image
+                        <Trash2
+                          size={16}
+                        />
                       </button>
                     </div>
-                  ) : (
-                    <label className="phaseUpload">
-                      <ImagePlus
-                        size={24}
-                      />
+                  </article>
+                ),
+              )}
+            </section>
 
-                      <strong>
-                        Upload screenshot
-                      </strong>
-
-                      <small>
-                        PNG, JPG or WEBP
-                      </small>
-
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        onChange={(
-                          event,
-                        ) =>
-                          uploadImage(
-                            step.id,
-                            event,
-                          )
-                        }
-                      />
-                    </label>
-                  )}
-                </div>
-
-                <div className="phaseStepActions">
-                  <button
-                    aria-label="Move step up"
-                    disabled={
-                      index === 0
-                    }
-                    onClick={() =>
-                      moveStep(
-                        index,
-                        -1,
-                      )
-                    }
-                  >
-                    <ArrowUp
-                      size={16}
-                    />
-                  </button>
-
-                  <button
-                    aria-label="Move step down"
-                    disabled={
-                      index ===
-                      steps.length - 1
-                    }
-                    onClick={() =>
-                      moveStep(
-                        index,
-                        1,
-                      )
-                    }
-                  >
-                    <ArrowDown
-                      size={16}
-                    />
-                  </button>
-
-                  <button
-                    aria-label="Duplicate step"
-                    onClick={() =>
-                      duplicateStep(
-                        step,
-                      )
-                    }
-                  >
-                    <Copy size={16} />
-                  </button>
-
-                  <button
-                    aria-label="Delete step"
-                    onClick={() =>
-                      removeStep(
-                        step.id,
-                      )
-                    }
-                  >
-                    <Trash2
-                      size={16}
-                    />
-                  </button>
-                </div>
-              </article>
-            ),
-          )}
-        </section>
-
-        <button
-          className="phaseAddStep"
-          onClick={addStep}
-        >
-          <Plus size={18} />
-          Add another step
-        </button>
+            <button
+              className="phaseEditorAddStep"
+              onClick={addStep}
+            >
+              <Plus size={18} />
+              Add another step
+            </button>
+          </>
+        )}
       </section>
     </main>
   );
