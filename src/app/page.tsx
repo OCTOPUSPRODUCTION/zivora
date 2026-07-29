@@ -4,9 +4,11 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  ChevronDown,
   ChevronLeft,
   FileText,
   Home as HomeIcon,
+  Menu,
   MousePointerClick,
   Plus,
   Search,
@@ -97,6 +99,7 @@ export default function Home() {
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [copied, setCopied] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -259,137 +262,709 @@ export default function Home() {
 
   if (screen === "landing") {
     return (
-      <main>
-        <header className="topbar">
-          <Logo />
+      <main className="marketingPage">
+        <header className="professionalNavbar">
+          <div className="navbarInner">
+            <button
+              className="brandButton"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              aria-label="Go to Zivora homepage"
+            >
+              <Logo />
+            </button>
 
-          <nav>
-            <a href="#features">Features</a>
-            <a href="#how">How it works</a>
-          </nav>
+            <nav className="desktopNavigation" aria-label="Main navigation">
+              <div className="navDropdown">
+                <button className="navLink">
+                  Product
+                  <ChevronDown size={15} />
+                </button>
 
-          <button
-            className="button buttonDark"
-            onClick={() => setScreen("dashboard")}
-          >
-            Get started
-          </button>
-        </header>
+                <div className="dropdownPanel">
+                  <a href="#product">
+                    <span className="dropdownIcon">
+                      <MousePointerClick size={19} />
+                    </span>
+                    <span>
+                      <strong>Workflow guides</strong>
+                      <small>Create clear step-by-step documentation.</small>
+                    </span>
+                  </a>
 
-        <section className="hero">
-          <div className="heroText">
-            <span className="eyebrow">
-              <Sparkles size={15} />
-              Workflow documentation
-            </span>
+                  <a href="#product">
+                    <span className="dropdownIcon">
+                      <FileText size={19} />
+                    </span>
+                    <span>
+                      <strong>Guide editor</strong>
+                      <small>Edit, organise and publish every process.</small>
+                    </span>
+                  </a>
 
-            <h1>Turn every process into a clear guide.</h1>
-
-            <p>
-              Zivora helps teams create, edit and share beautiful step-by-step
-              instructions for every repeatable workflow.
-            </p>
-
-            <div className="heroButtons">
-              <button
-                className="button buttonPurple"
-                onClick={() => setScreen("dashboard")}
-              >
-                Create your first guide
-                <ArrowRight size={18} />
-              </button>
-
-              <a className="button buttonLight" href="#features">
-                Explore features
-              </a>
-            </div>
-          </div>
-
-          <div className="preview">
-            <div className="browserDots">
-              <span />
-              <span />
-              <span />
-            </div>
-
-            <div className="previewHeading" />
-
-            {[1, 2, 3, 4].map((number) => (
-              <div className="previewStep" key={number}>
-                <div className="previewNumber">{number}</div>
-
-                <div className="previewLines">
-                  <div />
-                  <div />
+                  <a href="#product">
+                    <span className="dropdownIcon">
+                      <Share2 size={19} />
+                    </span>
+                    <span>
+                      <strong>Team sharing</strong>
+                      <small>Keep important knowledge accessible.</small>
+                    </span>
+                  </a>
                 </div>
               </div>
-            ))}
+
+              <div className="navDropdown">
+                <button className="navLink">
+                  Solutions
+                  <ChevronDown size={15} />
+                </button>
+
+                <div className="dropdownPanel compactDropdown">
+                  <a href="#solutions">
+                    <span>
+                      <strong>Standard operating procedures</strong>
+                      <small>Document repeatable business processes.</small>
+                    </span>
+                  </a>
+
+                  <a href="#solutions">
+                    <span>
+                      <strong>Employee onboarding</strong>
+                      <small>Help new team members become productive.</small>
+                    </span>
+                  </a>
+
+                  <a href="#solutions">
+                    <span>
+                      <strong>Customer support</strong>
+                      <small>Turn common answers into reusable guides.</small>
+                    </span>
+                  </a>
+                </div>
+              </div>
+
+              <a className="navLink" href="#customers">
+                Customers
+              </a>
+
+              <div className="navDropdown">
+                <button className="navLink">
+                  Resources
+                  <ChevronDown size={15} />
+                </button>
+
+                <div className="dropdownPanel compactDropdown">
+                  <a href="#how">
+                    <span>
+                      <strong>How Zivora works</strong>
+                      <small>See the complete documentation workflow.</small>
+                    </span>
+                  </a>
+
+                  <a href="#resources">
+                    <span>
+                      <strong>Documentation guides</strong>
+                      <small>Learn how to create better processes.</small>
+                    </span>
+                  </a>
+
+                  <a href="#resources">
+                    <span>
+                      <strong>Best practices</strong>
+                      <small>Build documentation people will use.</small>
+                    </span>
+                  </a>
+                </div>
+              </div>
+
+              <a className="navLink" href="#about">
+                About
+              </a>
+            </nav>
+
+            <div className="navbarActions">
+              <button
+                className="signInButton"
+                onClick={() => setScreen("dashboard")}
+              >
+                Sign in
+              </button>
+
+              <button
+                className="navbarPrimaryButton"
+                onClick={() => setScreen("dashboard")}
+              >
+                Get started
+                <ArrowRight size={17} />
+              </button>
+
+              <button
+                className="mobileMenuButton"
+                onClick={() => setMobileMenuOpen((current) => !current)}
+                aria-label="Open navigation menu"
+              >
+                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              </button>
+            </div>
+          </div>
+
+          {mobileMenuOpen && (
+            <div className="mobileNavigation">
+              <a href="#product" onClick={() => setMobileMenuOpen(false)}>
+                Product
+              </a>
+              <a href="#solutions" onClick={() => setMobileMenuOpen(false)}>
+                Solutions
+              </a>
+              <a href="#customers" onClick={() => setMobileMenuOpen(false)}>
+                Customers
+              </a>
+              <a href="#resources" onClick={() => setMobileMenuOpen(false)}>
+                Resources
+              </a>
+              <a href="#about" onClick={() => setMobileMenuOpen(false)}>
+                About
+              </a>
+
+              <div className="mobileNavigationActions">
+                <button
+                  className="button buttonLight"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setScreen("dashboard");
+                  }}
+                >
+                  Sign in
+                </button>
+
+                <button
+                  className="button buttonPurple"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setScreen("dashboard");
+                  }}
+                >
+                  Get started
+                </button>
+              </div>
+            </div>
+          )}
+        </header>
+
+        <section className="professionalHero">
+          <div className="heroBackgroundGrid" />
+
+          <div className="heroGlow heroGlowOne" />
+          <div className="heroGlow heroGlowTwo" />
+
+          <div className="professionalHeroInner">
+            <div className="professionalHeroCopy">
+              <span className="heroAnnouncement">
+                <span className="announcementDot" />
+                A smarter way to document how work gets done
+                <ArrowRight size={15} />
+              </span>
+
+              <h1>
+                Turn everyday work into
+                <span> knowledge everyone can use.</span>
+              </h1>
+
+              <p>
+                Zivora helps teams capture important workflows, create clear
+                step-by-step guides and keep knowledge accessible across the
+                organisation.
+              </p>
+
+              <div className="professionalHeroButtons">
+                <button
+                  className="heroPrimaryButton"
+                  onClick={() => setScreen("dashboard")}
+                >
+                  Start creating for free
+                  <ArrowRight size={18} />
+                </button>
+
+                <button
+                  className="heroSecondaryButton"
+                  onClick={() =>
+                    document
+                      .getElementById("product")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                >
+                  <span className="playButton">
+                    <MousePointerClick size={17} />
+                  </span>
+                  See how it works
+                </button>
+              </div>
+
+              <div className="heroTrustPoints">
+                <span>
+                  <Check size={16} />
+                  No credit card
+                </span>
+
+                <span>
+                  <Check size={16} />
+                  Create guides in minutes
+                </span>
+
+                <span>
+                  <Check size={16} />
+                  Built for modern teams
+                </span>
+              </div>
+            </div>
+
+            <div className="productShowcase">
+              <div className="showcaseDecoration showcaseDecorationOne" />
+              <div className="showcaseDecoration showcaseDecorationTwo" />
+
+              <div className="productWindow">
+                <div className="productWindowHeader">
+                  <div className="windowControls">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+
+                  <div className="windowAddress">
+                    <span className="addressLock">Z</span>
+                    app.zivora.com/guides
+                  </div>
+
+                  <div className="windowUser">VA</div>
+                </div>
+
+                <div className="productWindowBody">
+                  <aside className="showcaseSidebar">
+                    <div className="miniLogo">Z</div>
+
+                    <div className="miniSidebarItem active">
+                      <HomeIcon size={15} />
+                    </div>
+
+                    <div className="miniSidebarItem">
+                      <BookOpen size={15} />
+                    </div>
+
+                    <div className="miniSidebarItem">
+                      <FileText size={15} />
+                    </div>
+                  </aside>
+
+                  <div className="showcaseContent">
+                    <div className="showcaseTopline">
+                      <div>
+                        <small>Workspace</small>
+                        <h3>Customer onboarding</h3>
+                      </div>
+
+                      <button>
+                        <Plus size={14} />
+                        New guide
+                      </button>
+                    </div>
+
+                    <div className="showcaseGuide">
+                      <div className="showcaseGuideHeader">
+                        <span className="publishedPill">Published</span>
+                        <div className="showcaseGuideActions">
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                      </div>
+
+                      <h4>How to invite a new team member</h4>
+
+                      <p>
+                        Follow these steps to add a colleague to your workspace.
+                      </p>
+
+                      <div className="showcaseSteps">
+                        <div className="showcaseStep">
+                          <span>1</span>
+                          <div>
+                            <strong>Open workspace settings</strong>
+                            <small>
+                              Select Settings from the navigation menu.
+                            </small>
+                          </div>
+                        </div>
+
+                        <div className="showcaseStep selected">
+                          <span>2</span>
+                          <div>
+                            <strong>Choose team members</strong>
+                            <small>
+                              Open the Members tab and select Invite.
+                            </small>
+                          </div>
+                        </div>
+
+                        <div className="showcaseStep">
+                          <span>3</span>
+                          <div>
+                            <strong>Send the invitation</strong>
+                            <small>
+                              Enter their email address and confirm.
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="floatingCaptureCard">
+                <div className="captureIcon">
+                  <Sparkles size={18} />
+                </div>
+
+                <div>
+                  <strong>Guide created</strong>
+                  <small>3 steps captured automatically</small>
+                </div>
+
+                <Check size={18} />
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="section" id="features">
-          <div className="sectionHeading">
-            <span className="eyebrow">Core features</span>
-            <h2>Documentation without the busywork</h2>
+        <section className="customerStrip" id="customers">
+          <p>Designed for teams that care about clear, reliable knowledge</p>
+
+          <div className="customerNames">
+            <span>Northstar</span>
+            <span>Octopus</span>
+            <span>Vertex</span>
+            <span>Cloudline</span>
+            <span>Everfield</span>
+            <span>BrightLabs</span>
+          </div>
+        </section>
+
+        <section className="professionalSection" id="solutions">
+          <div className="professionalSectionHeading">
+            <span className="sectionLabel">Built for every workflow</span>
+
+            <h2>How will your team use Zivora?</h2>
+
             <p>
-              Create useful process guides that are simple to maintain and
-              share.
+              Create one reliable source of knowledge for every process your
+              team repeats.
             </p>
           </div>
 
-          <div className="featureGrid">
-            <article className="featureCard">
-              <MousePointerClick size={30} />
-              <h3>Create workflows</h3>
+          <div className="useCaseGrid">
+            <article className="useCaseCard coral">
+              <div className="useCaseIcon">
+                <FileText size={24} />
+              </div>
+
+              <h3>Create SOPs</h3>
+
               <p>
-                Build structured guides with clear and editable instructions.
+                Turn repeatable business processes into consistent,
+                easy-to-follow standard operating procedures.
+              </p>
+
+              <a href="#product">
+                Explore SOPs
+                <ArrowRight size={16} />
+              </a>
+            </article>
+
+            <article className="useCaseCard yellow">
+              <div className="useCaseIcon">
+                <Sparkles size={24} />
+              </div>
+
+              <h3>Train your team</h3>
+
+              <p>
+                Give employees practical guides that help them learn tools,
+                systems and responsibilities faster.
+              </p>
+
+              <a href="#product">
+                Explore training
+                <ArrowRight size={16} />
+              </a>
+            </article>
+
+            <article className="useCaseCard green">
+              <div className="useCaseIcon">
+                <BookOpen size={24} />
+              </div>
+
+              <h3>Build a knowledge base</h3>
+
+              <p>
+                Keep important company knowledge organised, searchable and
+                accessible whenever it is needed.
+              </p>
+
+              <a href="#product">
+                Explore knowledge
+                <ArrowRight size={16} />
+              </a>
+            </article>
+
+            <article className="useCaseCard blue">
+              <div className="useCaseIcon">
+                <MousePointerClick size={24} />
+              </div>
+
+              <h3>Onboard new hires</h3>
+
+              <p>
+                Help new team members understand processes without relying on
+                repeated meetings and explanations.
+              </p>
+
+              <a href="#product">
+                Explore onboarding
+                <ArrowRight size={16} />
+              </a>
+            </article>
+          </div>
+        </section>
+
+        <section className="productExperienceSection" id="product">
+          <div className="productExperienceInner">
+            <div className="productExperienceCopy">
+              <span className="sectionLabel">A better documentation process</span>
+
+              <h2>From an undocumented task to a useful guide.</h2>
+
+              <p>
+                Zivora gives your team a simple place to create, refine,
+                organise and share operational knowledge.
+              </p>
+
+              <div className="featureList">
+                <div>
+                  <span>
+                    <Check size={17} />
+                  </span>
+
+                  <div>
+                    <strong>Create structured workflow guides</strong>
+                    <p>
+                      Break every process into clear and understandable steps.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <span>
+                    <Check size={17} />
+                  </span>
+
+                  <div>
+                    <strong>Edit and improve at any time</strong>
+                    <p>
+                      Keep documentation accurate as tools and processes change.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <span>
+                    <Check size={17} />
+                  </span>
+
+                  <div>
+                    <strong>Share knowledge across your organisation</strong>
+                    <p>
+                      Give people a reliable place to find the answers they
+                      need.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                className="heroPrimaryButton"
+                onClick={() => setScreen("dashboard")}
+              >
+                Explore your workspace
+                <ArrowRight size={18} />
+              </button>
+            </div>
+
+            <div className="workflowVisual">
+              <div className="workflowVisualHeader">
+                <span className="workflowStatus">
+                  <span />
+                  Recording workflow
+                </span>
+
+                <span className="workflowTimer">00:24</span>
+              </div>
+
+              <div className="workflowBrowser">
+                <div className="workflowBrowserTop">
+                  <div>
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+
+                  <div className="workflowUrl">workspace.example.com</div>
+                </div>
+
+                <div className="workflowPage">
+                  <div className="workflowFakeSidebar">
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+
+                  <div className="workflowFakeContent">
+                    <div className="fakePageTitle" />
+
+                    <div className="fakeForm">
+                      <div />
+                      <div />
+                      <button>Invite member</button>
+                    </div>
+
+                    <div className="clickIndicator">
+                      <MousePointerClick size={20} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="workflowCompleteCard">
+                <span>
+                  <Check size={17} />
+                </span>
+
+                <div>
+                  <strong>Step captured</strong>
+                  <small>Click “Invite member”</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="howSection" id="how">
+          <div className="professionalSectionHeading">
+            <span className="sectionLabel">Simple from start to finish</span>
+            <h2>Document a process in three steps.</h2>
+          </div>
+
+          <div className="howGrid">
+            <article>
+              <span className="howNumber">01</span>
+              <div className="howIcon">
+                <MousePointerClick size={25} />
+              </div>
+              <h3>Capture the workflow</h3>
+              <p>
+                Start with a process your team performs regularly.
               </p>
             </article>
 
-            <article className="featureCard">
-              <FileText size={30} />
-              <h3>Edit everything</h3>
+            <article>
+              <span className="howNumber">02</span>
+              <div className="howIcon">
+                <FileText size={25} />
+              </div>
+              <h3>Refine the guide</h3>
               <p>
-                Update titles, descriptions and workflow steps whenever needed.
+                Add context, improve the instructions and organise each step.
               </p>
             </article>
 
-            <article className="featureCard">
-              <Share2 size={30} />
-              <h3>Publish and share</h3>
+            <article>
+              <span className="howNumber">03</span>
+              <div className="howIcon">
+                <Share2 size={25} />
+              </div>
+              <h3>Share the knowledge</h3>
               <p>
-                Make finished guides available to colleagues and customers.
+                Publish the finished guide and make it available to your team.
               </p>
             </article>
           </div>
         </section>
 
-        <section className="section sectionGrey" id="how">
-          <div className="sectionHeading">
-            <span className="eyebrow">How it works</span>
-            <h2>Create. Refine. Share.</h2>
-          </div>
+        <section className="resourcesSection" id="resources">
+          <div className="resourcesContent">
+            <div>
+              <span className="sectionLabel">Documentation that stays useful</span>
 
-          <div className="processGrid">
-            <article>
-              <b>01</b>
-              <h3>Create a guide</h3>
-              <p>Name the process you want to document.</p>
-            </article>
+              <h2>
+                Give your team the clarity to do their best work.
+              </h2>
 
-            <article>
-              <b>02</b>
-              <h3>Add the steps</h3>
-              <p>Explain every action clearly and concisely.</p>
-            </article>
+              <p>
+                Stop important processes from living inside messages, meetings
+                and individual memory.
+              </p>
+            </div>
 
-            <article>
-              <b>03</b>
-              <h3>Publish it</h3>
-              <p>Share the completed guide with your team.</p>
-            </article>
+            <button
+              className="resourcesButton"
+              onClick={() => setScreen("dashboard")}
+            >
+              Build your first guide
+              <ArrowRight size={18} />
+            </button>
           </div>
         </section>
+
+        <footer className="professionalFooter" id="about">
+          <div className="footerTop">
+            <div className="footerBrand">
+              <Logo />
+
+              <p>
+                Clear process documentation for teams that want to work
+                smarter.
+              </p>
+            </div>
+
+            <div className="footerLinks">
+              <div>
+                <strong>Product</strong>
+                <a href="#product">Workflow guides</a>
+                <a href="#product">Guide editor</a>
+                <a href="#product">Sharing</a>
+              </div>
+
+              <div>
+                <strong>Solutions</strong>
+                <a href="#solutions">SOPs</a>
+                <a href="#solutions">Onboarding</a>
+                <a href="#solutions">Training</a>
+              </div>
+
+              <div>
+                <strong>Company</strong>
+                <a href="#about">About</a>
+                <a href="#resources">Resources</a>
+                <a href="#customers">Customers</a>
+              </div>
+            </div>
+          </div>
+
+          <div className="footerBottom">
+            <span>© {new Date().getFullYear()} Zivora</span>
+            <span>Built by Octopus Production</span>
+          </div>
+        </footer>
       </main>
     );
   }
