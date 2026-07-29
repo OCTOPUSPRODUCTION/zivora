@@ -2334,3 +2334,819 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   ZIVORA PHASE 1 APPLICATION
+   ========================================================= */
+
+.phaseLogo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #211b29;
+  font-size: 20px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.phaseLogo > span,
+.phaseShare > header > span {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #6c4cff;
+  color: #fff;
+}
+
+.phaseEyebrow {
+  margin: 0;
+  color: #6c4cff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.phasePrimary,
+.phaseSecondary {
+  min-height: 42px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.phasePrimary {
+  border: 0;
+  background: #6c4cff;
+  color: #fff;
+}
+
+.phasePrimary:hover {
+  background: #583bd8;
+}
+
+.phaseSecondary {
+  border: 1px solid #ddd8e2;
+  background: #fff;
+  color: #514959;
+}
+
+.phaseAuth {
+  min-height: 100vh;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(
+      circle at top,
+      #eee9ff,
+      transparent 38%
+    ),
+    #f6f4fa;
+}
+
+.phaseAuthCard {
+  width: min(440px, 100%);
+  padding: 36px;
+  display: grid;
+  gap: 19px;
+  border: 1px solid #e6e1eb;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow:
+    0 24px 70px
+    rgba(35, 24, 55, 0.1);
+}
+
+.phaseAuthCard h1 {
+  margin: 7px 0 0;
+  font-size: 28px;
+}
+
+.phaseAuthDescription {
+  margin: 8px 0 0;
+  color: #837b89;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.phaseAuthCard label {
+  display: grid;
+  gap: 7px;
+  color: #4f4856;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.phaseAuthCard input {
+  height: 46px;
+  padding: 0 13px;
+  border: 1px solid #ddd7e2;
+  border-radius: 10px;
+  outline: none;
+}
+
+.phaseAuthCard input:focus {
+  border-color: #8a73ff;
+  box-shadow:
+    0 0 0 3px
+    rgba(108, 76, 255, 0.1);
+}
+
+.phaseAuthCard > button {
+  height: 46px;
+  border: 0;
+  border-radius: 10px;
+  background: #6c4cff;
+  color: #fff;
+  font-weight: 800;
+}
+
+.phaseAuthCard > button:disabled {
+  opacity: 0.55;
+}
+
+.phaseAuthSwitch {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+}
+
+.phaseMessage {
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f4f0ff;
+  color: #5f45d8;
+  font-size: 11px;
+}
+
+.phaseDashboard {
+  min-height: 100vh;
+  display: flex;
+  background: #f7f7fa;
+}
+
+.phaseSidebar {
+  width: 230px;
+  min-height: 100vh;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid #e6e2e9;
+  background: #fff;
+}
+
+.phaseSidebar nav {
+  margin-top: 35px;
+}
+
+.phaseSidebar nav button,
+.phaseSignOut {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #706977;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.phaseSidebar nav button.active {
+  background: #eeeaff;
+  color: #6c4cff;
+}
+
+.phaseWorkspace {
+  min-width: 0;
+  flex: 1;
+  padding: 30px;
+}
+
+.phaseWorkspaceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.phaseWorkspaceHeader h1 {
+  margin: 6px 0 4px;
+  font-size: 28px;
+}
+
+.phaseWorkspaceHeader > div > p:last-child {
+  margin: 0;
+  color: #817987;
+  font-size: 12px;
+}
+
+.phaseStats {
+  margin: 25px 0;
+  display: grid;
+  grid-template-columns:
+    repeat(3, 1fr);
+  gap: 14px;
+}
+
+.phaseStats article {
+  min-height: 120px;
+  padding: 20px;
+  position: relative;
+  border: 1px solid #e4e0e7;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.phaseStats article > span {
+  display: block;
+  color: #88818e;
+  font-size: 11px;
+}
+
+.phaseStats article strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+}
+
+.phaseStats article svg {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: #6c4cff;
+}
+
+.phaseToolbar {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.phaseToolbar > label {
+  min-width: 280px;
+  height: 42px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #ddd8e2;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.phaseToolbar input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.phaseFilters,
+.phaseViewButtons {
+  padding: 4px;
+  display: flex;
+  border: 1px solid #ddd8e2;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.phaseViewButtons {
+  margin-left: auto;
+}
+
+.phaseFilters button,
+.phaseViewButtons button {
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #766f7c;
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.phaseFilters button.active,
+.phaseViewButtons button.active {
+  background: #eeeaff;
+  color: #6c4cff;
+}
+
+.phaseGuideGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.phaseGuideList {
+  display: grid;
+  gap: 12px;
+}
+
+.phaseGuideCard {
+  overflow: hidden;
+  border: 1px solid #e2dde6;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow:
+    0 8px 24px
+    rgba(40, 29, 56, 0.04);
+}
+
+.phaseGuideCard > a {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.phaseThumb {
+  height: 140px;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(
+      145deg,
+      #f3f0ff,
+      #e8e2ff
+    );
+  color: #6c4cff;
+}
+
+.phaseGuideCardBody {
+  padding: 17px;
+}
+
+.phaseGuideCard h2 {
+  margin: 12px 0 7px;
+  font-size: 16px;
+}
+
+.phaseGuideCardBody > p {
+  min-height: 40px;
+  margin: 0 0 12px;
+  color: #7c7482;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.phaseGuideCardBody > small {
+  color: #9a939f;
+  font-size: 9px;
+}
+
+.phaseGuideCard footer {
+  padding: 10px 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #eee;
+}
+
+.phaseGuideCard footer button {
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: #6e6674;
+  font-size: 10px;
+}
+
+.phaseGuideCard footer button:last-child {
+  color: #bb4f58;
+}
+
+.phaseGuideList
+.phaseGuideCard > a {
+  display: grid;
+  grid-template-columns:
+    220px 1fr;
+}
+
+.phaseGuideList .phaseThumb {
+  height: 100%;
+  min-height: 150px;
+}
+
+.phaseStatus {
+  width: fit-content;
+  padding: 5px 8px;
+  display: inline-block;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.phaseStatus.draft {
+  background: #fff3d9;
+  color: #a16d17;
+}
+
+.phaseStatus.published {
+  background: #e5f5ea;
+  color: #347d4b;
+}
+
+.phaseEmpty {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  border: 1px dashed #d6cfdd;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+}
+
+.phaseEmpty svg {
+  color: #6c4cff;
+}
+
+.phaseEmpty h2,
+.phaseEmpty p {
+  margin: 0;
+}
+
+.phaseEmpty p {
+  margin-bottom: 10px;
+  color: #837b89;
+  font-size: 12px;
+}
+
+.phaseEditor {
+  min-height: 100vh;
+  background: #f7f7fa;
+}
+
+.phaseEditor > header {
+  min-height: 70px;
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e4e0e7;
+  background: #fff;
+}
+
+.phaseEditor > header > a {
+  margin-right: auto;
+  color: #514959;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.saveState {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #7d7583;
+  font-size: 11px;
+}
+
+.saveState.error {
+  color: #c64f58;
+}
+
+.phaseEditorContent {
+  width: min(
+    960px,
+    calc(100% - 32px)
+  );
+  margin: auto;
+  padding: 34px 0 70px;
+}
+
+.phaseGuideHeader {
+  padding: 25px;
+  border: 1px solid #e2dde6;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.phaseGuideHeader input,
+.phaseGuideHeader textarea,
+.phaseStep input,
+.phaseStep textarea {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  resize: vertical;
+}
+
+.phaseGuideHeader input {
+  margin-top: 16px;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.phaseGuideHeader textarea {
+  min-height: 70px;
+  margin-top: 8px;
+  color: #716977;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.phaseSteps {
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.phaseStep {
+  padding: 18px;
+  display: grid;
+  grid-template-columns:
+    auto 1fr auto;
+  align-items: start;
+  gap: 14px;
+  border: 1px solid #e2dde6;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.phaseStepNumber {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eeeaff;
+  color: #6c4cff;
+  font-weight: 900;
+}
+
+.phaseStepBody input {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.phaseStepBody textarea {
+  min-height: 72px;
+  margin-top: 8px;
+  color: #756d7b;
+  line-height: 1.6;
+}
+
+.phaseUpload {
+  min-height: 140px;
+  margin-top: 14px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  border: 1px dashed #cfc7d8;
+  border-radius: 11px;
+  background: #faf9fc;
+  color: #776c80;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.phaseUpload svg {
+  color: #6c4cff;
+}
+
+.phaseUpload small {
+  color: #9a929f;
+}
+
+.phaseUpload input {
+  display: none;
+}
+
+.phaseImage {
+  margin-top: 14px;
+}
+
+.phaseImage img {
+  width: 100%;
+  max-height: 460px;
+  display: block;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #f4f2f6;
+}
+
+.phaseImage button {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid #e1dbe5;
+  border-radius: 8px;
+  background: #fff;
+  color: #b34d55;
+  font-size: 10px;
+}
+
+.phaseStepActions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.phaseStepActions button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ddd8e2;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.phaseStepActions button:disabled {
+  opacity: 0.35;
+}
+
+.phaseStepActions button:last-child {
+  color: #bd4c55;
+}
+
+.phaseAddStep {
+  width: 100%;
+  height: 50px;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed #bfb5cb;
+  border-radius: 12px;
+  background: #fff;
+  color: #6c4cff;
+  font-weight: 800;
+}
+
+.phaseShare {
+  min-height: 100vh;
+  padding: 22px;
+  background: #f7f7fa;
+}
+
+.phaseShare > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+}
+
+.phaseShare > article {
+  width: min(850px, 100%);
+  margin: 35px auto;
+  padding: 38px;
+  border: 1px solid #e2dde6;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.phaseShare h1 {
+  margin: 12px 0;
+  font-size: 38px;
+}
+
+.phaseShareDescription {
+  color: #746c7a;
+  line-height: 1.7;
+}
+
+.phaseShareSteps {
+  margin-top: 30px;
+  display: grid;
+  gap: 18px;
+}
+
+.phaseShareSteps section {
+  padding: 18px;
+  display: grid;
+  grid-template-columns:
+    auto 1fr;
+  gap: 14px;
+  border: 1px solid #ebe7ee;
+  border-radius: 14px;
+}
+
+.phaseShareSteps section > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eeeaff;
+  color: #6c4cff;
+  font-weight: 900;
+}
+
+.phaseShareSteps h2 {
+  margin: 4px 0 8px;
+}
+
+.phaseShareSteps p {
+  color: #716978;
+  line-height: 1.65;
+}
+
+.phaseShareSteps img {
+  width: 100%;
+  margin-top: 12px;
+  border-radius: 10px;
+}
+
+.phaseLoading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 950px) {
+  .phaseSidebar {
+    display: none;
+  }
+
+  .phaseGuideGrid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .phaseWorkspace {
+    padding: 20px;
+  }
+
+  .phaseWorkspaceHeader {
+    align-items: flex-start;
+  }
+
+  .phaseStats {
+    grid-template-columns: 1fr;
+  }
+
+  .phaseToolbar {
+    flex-wrap: wrap;
+  }
+
+  .phaseToolbar > label {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .phaseViewButtons {
+    margin-left: 0;
+  }
+
+  .phaseGuideGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .phaseGuideList
+  .phaseGuideCard > a {
+    grid-template-columns: 1fr;
+  }
+
+  .phaseEditor > header {
+    flex-wrap: wrap;
+  }
+
+  .phaseEditor > header > a {
+    width: 100%;
+  }
+
+  .phaseStep {
+    grid-template-columns:
+      auto 1fr;
+  }
+
+  .phaseStepActions {
+    grid-column: 2;
+    flex-direction: row;
+  }
+
+  .phaseShare > article {
+    padding: 24px;
+  }
+
+  .phaseShare h1 {
+    font-size: 30px;
+  }
+}
