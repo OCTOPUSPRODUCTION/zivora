@@ -4,6 +4,10 @@ const counterElement = document.getElementById("counter");
 
 const startButton = document.getElementById("start");
 const stopButton = document.getElementById("stop");
+const exportButton = document.getElementById("export");
+const openImportButton =
+  document.getElementById("openImport");
+const clearButton = document.getElementById("clear");
 
 async function sendMessage(message) {
   return chrome.runtime.sendMessage(message);
@@ -33,6 +37,7 @@ function render(state) {
 
   startButton.disabled = active;
   stopButton.disabled = !active;
+  exportButton.disabled = count === 0;
   titleInput.disabled = active;
 }
 
@@ -82,6 +87,44 @@ stopButton.addEventListener("click", async () => {
         : "Could not create the guide."
     );
   }
+});
+
+exportButton.addEventListener("click", async () => {
+  const response = await sendMessage({
+    type: "EXPORT_RECORDING"
+  });
+
+  if (!response.success) {
+    alert(
+      response.error ||
+        "Could not export the recording."
+    );
+  }
+});
+
+openImportButton.addEventListener(
+  "click",
+  async () => {
+    await chrome.tabs.create({
+      url: "http://localhost:3000/capture/import"
+    });
+  }
+);
+
+clearButton.addEventListener("click", async () => {
+  const confirmed = confirm(
+    "Delete the current captured workflow?"
+  );
+
+  if (!confirmed) return;
+
+  titleInput.value = "";
+
+  render(
+    await sendMessage({
+      type: "CLEAR_RECORDING"
+    })
+  );
 });
 
 sendMessage({

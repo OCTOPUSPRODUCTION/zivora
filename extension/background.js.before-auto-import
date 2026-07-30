@@ -2,15 +2,13 @@ let recording = false;
 let steps = [];
 let recordingTitle = "Captured workflow";
 let startedAt = null;
-let pendingWorkflow = null;
 
 async function loadState() {
   const state = await chrome.storage.local.get([
     "recording",
     "steps",
     "recordingTitle",
-    "startedAt",
-    "pendingWorkflow"
+    "startedAt"
   ]);
 
   recording = Boolean(state.recording);
@@ -18,8 +16,6 @@ async function loadState() {
   recordingTitle =
     state.recordingTitle || "Captured workflow";
   startedAt = state.startedAt || null;
-  pendingWorkflow =
-    state.pendingWorkflow || null;
 }
 
 async function saveState() {
@@ -27,8 +23,7 @@ async function saveState() {
     recording,
     steps,
     recordingTitle,
-    startedAt,
-    pendingWorkflow
+    startedAt
   });
 }
 
@@ -645,78 +640,14 @@ chrome.runtime.onMessage.addListener(
 
       if (message.type === "STOP_RECORDING") {
         recording = false;
-
-        if (steps.length === 0) {
-          await saveState();
-
-          sendResponse({
-            success: false,
-            recording,
-            steps,
-            recordingTitle,
-            startedAt,
-            error: "No workflow steps were captured."
-          });
-          return;
-        }
-
-        pendingWorkflow = {
-          version: 2,
-          source: "zivora-chrome-extension",
-          title: recordingTitle,
-          description: `Workflow captured with Zivora on ${
-            startedAt
-              ? new Date(startedAt).toLocaleString()
-              : "an unknown date"
-          }.`,
-          startedAt,
-          exportedAt: new Date().toISOString(),
-          steps: [...steps]
-        };
-
-        steps = [];
-        recordingTitle = "Captured workflow";
-        startedAt = null;
-
-        await saveState();
-
-        await chrome.tabs.create({
-          url: "http://localhost:3000/capture/auto-import"
-        });
-
-        sendResponse({
-          success: true,
-          recording: false,
-          steps: [],
-          recordingTitle: "Captured workflow",
-          startedAt: null,
-          creatingGuide: true
-        });
-        return;
-      }
-
-      if (message.type === "GET_AUTO_IMPORT") {
-        if (!pendingWorkflow) {
-          sendResponse({
-            success: false,
-            error: "No completed workflow is waiting to be imported."
-          });
-          return;
-        }
-
-        sendResponse({
-          success: true,
-          workflow: pendingWorkflow
-        });
-        return;
-      }
-
-      if (message.type === "AUTO_IMPORT_COMPLETE") {
-        pendingWorkflow = null;
         await saveState();
 
         sendResponse({
-          success: true
+          success: true,
+          recording,
+          steps,
+          recordingTitle,
+          startedAt
         });
         return;
       }

@@ -6,7 +6,6 @@ import {
   ArrowUp,
   Check,
   Copy,
-  Download,
   Eye,
   ImagePlus,
   Loader2,
@@ -770,15 +769,6 @@ export default function GuideEditorPage() {
               ? "Publish"
               : "Unpublish"}
           </button>
-
-          <Link
-            href={`/guides/${guide.id}/print`}
-            target="_blank"
-            className="phaseEditorSecondary"
-          >
-            <Download size={17} />
-            Download PDF
-          </Link>
 
           <button
             className="phaseEditorPrimary"

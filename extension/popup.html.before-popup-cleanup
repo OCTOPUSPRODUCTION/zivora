@@ -45,6 +45,18 @@
         Stop recording
       </button>
 
+      <button id="export" class="secondary" disabled>
+        Export recording
+      </button>
+
+      <button id="openImport" class="secondary">
+        Open Zivora importer
+      </button>
+
+      <button id="clear" class="textButton">
+        Clear recording
+      </button>
+
       <div class="privacy">
         <strong>Privacy protection</strong>
         <span>

@@ -2,15 +2,13 @@ let recording = false;
 let steps = [];
 let recordingTitle = "Captured workflow";
 let startedAt = null;
-let pendingWorkflow = null;
 
 async function loadState() {
   const state = await chrome.storage.local.get([
     "recording",
     "steps",
     "recordingTitle",
-    "startedAt",
-    "pendingWorkflow"
+    "startedAt"
   ]);
 
   recording = Boolean(state.recording);
@@ -18,8 +16,6 @@ async function loadState() {
   recordingTitle =
     state.recordingTitle || "Captured workflow";
   startedAt = state.startedAt || null;
-  pendingWorkflow =
-    state.pendingWorkflow || null;
 }
 
 async function saveState() {
@@ -27,8 +23,7 @@ async function saveState() {
     recording,
     steps,
     recordingTitle,
-    startedAt,
-    pendingWorkflow
+    startedAt
   });
 }
 
@@ -645,10 +640,9 @@ chrome.runtime.onMessage.addListener(
 
       if (message.type === "STOP_RECORDING") {
         recording = false;
+        await saveState();
 
         if (steps.length === 0) {
-          await saveState();
-
           sendResponse({
             success: false,
             recording,
@@ -660,7 +654,23 @@ chrome.runtime.onMessage.addListener(
           return;
         }
 
-        pendingWorkflow = {
+        await chrome.tabs.create({
+          url: "http://localhost:3000/capture/auto-import"
+        });
+
+        sendResponse({
+          success: true,
+          recording,
+          steps,
+          recordingTitle,
+          startedAt,
+          creatingGuide: true
+        });
+        return;
+      }
+
+      if (message.type === "GET_AUTO_IMPORT") {
+        const workflow = {
           version: 2,
           source: "zivora-chrome-extension",
           title: recordingTitle,
@@ -671,48 +681,22 @@ chrome.runtime.onMessage.addListener(
           }.`,
           startedAt,
           exportedAt: new Date().toISOString(),
-          steps: [...steps]
+          steps
         };
 
-        steps = [];
-        recordingTitle = "Captured workflow";
-        startedAt = null;
-
-        await saveState();
-
-        await chrome.tabs.create({
-          url: "http://localhost:3000/capture/auto-import"
-        });
-
         sendResponse({
           success: true,
-          recording: false,
-          steps: [],
-          recordingTitle: "Captured workflow",
-          startedAt: null,
-          creatingGuide: true
-        });
-        return;
-      }
-
-      if (message.type === "GET_AUTO_IMPORT") {
-        if (!pendingWorkflow) {
-          sendResponse({
-            success: false,
-            error: "No completed workflow is waiting to be imported."
-          });
-          return;
-        }
-
-        sendResponse({
-          success: true,
-          workflow: pendingWorkflow
+          workflow
         });
         return;
       }
 
       if (message.type === "AUTO_IMPORT_COMPLETE") {
-        pendingWorkflow = null;
+        recording = false;
+        steps = [];
+        recordingTitle = "Captured workflow";
+        startedAt = null;
+
         await saveState();
 
         sendResponse({
